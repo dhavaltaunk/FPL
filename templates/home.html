@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>{{ title|default('Dashboard') }} | Records</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #e5e7eb;
+            background: #111827;
+            --page: #111827;
+            --surface: #1f2937;
+            --surface-raised: #273449;
+            --surface-hover: #29374b;
+            --border: #374151;
+            --border-subtle: #303b4d;
+            --text: #e5e7eb;
+            --text-strong: #f9fafb;
+            --text-muted: #9ca3af;
+            --accent: #4ade80;
+            --accent-soft: #163b2b;
+            --focus: rgb(74 222 128 / 20%);
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            min-width: 320px;
+            margin: 0;
+            background: var(--page);
+        }
+
+        .topbar {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 clamp(20px, 5vw, 64px);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            color: var(--text-strong);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 32px;
+            height: 32px;
+            place-items: center;
+            border-radius: 10px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 17px;
+        }
+
+        main {
+            width: min(1600px, calc(100% - 48px));
+            margin: 48px auto;
+        }
+
+        .page-heading { margin-bottom: 25px; }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--text-strong);
+            font-size: clamp(26px, 4vw, 34px);
+            letter-spacing: -0.04em;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 9px 0 0;
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .card {
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--surface);
+            box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
+        }
+
+        .card-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            min-height: 38px;
+            padding: 0 13px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-raised);
+            color: var(--text);
+            cursor: pointer;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .action-button:hover:not(:disabled) { background: var(--surface-hover); }
+
+        .action-button.primary {
+            border-color: #22c55e;
+            background: #15803d;
+            color: #fff;
+        }
+
+        .action-button.primary:hover:not(:disabled) { background: #16a34a; }
+
+        .action-button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .action-button:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
+        .refresh-status {
+            margin: 0;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .refresh-status[data-state="success"] { color: var(--accent); }
+        .refresh-status[data-state="error"] { color: #fca5a5; }
+        .refresh-status[hidden] { display: none; }
+
+        .record-count {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .record-count strong { color: var(--text); }
+
+        .search-wrap {
+            position: relative;
+            width: min(100%, 300px);
+        }
+
+        .search-wrap svg {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 38px;
+            padding: 0 12px 0 36px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            background: var(--page);
+            color: var(--text);
+            font: inherit;
+            font-size: 13px;
+            transition: border-color 120ms ease, box-shadow 120ms ease;
+        }
+
+        .search-input::placeholder { color: var(--text-muted); }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus);
+        }
+
+        .table-scroll { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead { background: var(--surface-raised); }
+
+        th {
+            padding: 10px 9px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.055em;
+            text-transform: uppercase;
+            overflow-wrap: anywhere;
+        }
+
+        th.team-column {
+            width: 18%;
+        }
+
+        .sort-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            max-width: 100%;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+            letter-spacing: inherit;
+            text-transform: inherit;
+            text-align: left;
+            overflow-wrap: anywhere;
+        }
+
+        .sort-button:hover { color: var(--accent); }
+        .sort-indicator { flex: 0 0 auto; color: var(--accent); font-size: 13px; }
+
+        td {
+            padding: 10px 9px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        td.team-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        tbody tr:last-child td { border-bottom: 0; }
+        tbody tr:hover { background: var(--surface-hover); }
+
+        .empty-state {
+            padding: 54px 20px;
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .empty-state[hidden] { display: none; }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .page-info {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-button {
+            min-height: 34px;
+            padding: 0 11px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: var(--surface-raised);
+            color: var(--text);
+            cursor: pointer;
+            font: inherit;
+            font-size: 12px;
+        }
+
+        .page-button:hover:not(:disabled) { background: var(--surface-hover); }
+
+        .page-button:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+            main {
+                width: calc(100% - 28px);
+                margin: 32px auto;
+            }
+
+            .topbar { height: 58px; }
+            .card-toolbar, .card-footer { align-items: stretch; flex-direction: column; }
+            .search-wrap { width: 100%; }
+            .toolbar-actions { align-items: stretch; flex-direction: column; }
+            .toolbar-actions .action-button { width: 100%; }
+            th, td { padding-right: 6px; padding-left: 6px; }
+            .card-footer { gap: 12px; }
+            .pagination { justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">✦</span>
+            <span>{{ title }}</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-heading" aria-labelledby="page-title">
+            <p class="eyebrow">Data overview</p>
+            <h1 id="page-title">{{ title|default('Records') }}</h1>
+            <p class="subtitle">Browse and search records from your collection.</p>
+        </section>
+
+        <section class="card" aria-label="Records table">
+            <div class="card-toolbar">
+                <p class="record-count" id="record-count" aria-live="polite">
+                    <strong>{{ items|length }}</strong> records
+                </p>
+                <div class="toolbar-actions">
+                    <label class="search-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"></circle>
+                            <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                        </svg>
+                        <input class="search-input" id="table-search" type="search" placeholder="Search records..." aria-label="Search records">
+                    </label>
+                    <button class="action-button primary" id="reload-teams" type="button">Reload teams data</button>
+                    <button class="action-button" id="refresh-table" type="button" hidden>Refresh table</button>
+                </div>
+            </div>
+            <p class="refresh-status" id="refresh-status" role="status" aria-live="polite" hidden></p>
+
+            {% if items %}
+                {% set column_state = namespace(names=[]) %}
+                {% for item in items %}
+                    {% for column in item.keys() %}
+                        {% if column not in column_state.names %}
+                            {% set _ = column_state.names.append(column) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                {% set columns = column_state.names %}
+                {% if columns %}
+                    <div class="table-scroll">
+                        <table id="records-table">
+                            <thead>
+                                <tr>
+                                    {% for column in columns %}
+                                        <th scope="col" aria-sort="none"{% if column|lower in ['name', 'team', 'team_name'] %} class="team-column"{% endif %}>
+                                            <button class="sort-button" type="button">
+                                                {{ column|replace('_', ' ') }}
+                                                <span class="sort-indicator" aria-hidden="true">↕</span>
+                                            </button>
+                                        </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        {% for column in columns %}
+                                            {% set value = item.get(column) %}
+                                            <td{% if column|lower in ['name', 'team', 'team_name'] %} class="team-name" title="{{ value }}"{% endif %}>
+                                                {% if value is none or value == '' %}
+                                                    <span aria-label="No value">—</span>
+                                                {% else %}
+                                                    {{ value }}
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="empty-state" id="empty-state" hidden>No records match your search.</div>
+                    <footer class="card-footer">
+                        <p class="page-info" id="page-info" aria-live="polite"></p>
+                        <nav class="pagination" aria-label="Table pagination">
+                            <button class="page-button" id="previous-page" type="button">Previous</button>
+                            <button class="page-button" id="next-page" type="button">Next</button>
+                        </nav>
+                    </footer>
+                {% else %}
+                    <div class="empty-state">These records have no fields to display.</div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">No records are available yet.</div>
+            {% endif %}
+        </section>
+    </main>
+
+    <script>
+            (() => {
+                const reloadButton = document.querySelector("#reload-teams");
+                const refreshButton = document.querySelector("#refresh-table");
+                const status = document.querySelector("#refresh-status");
+
+                function showStatus(message, state) {
+                    status.textContent = message;
+                    status.dataset.state = state;
+                    status.hidden = false;
+                }
+
+                reloadButton.addEventListener("click", async () => {
+                    reloadButton.disabled = true;
+                    refreshButton.hidden = true;
+                    showStatus("Refreshing teams data…", "loading");
+
+                    try {
+                        const response = await fetch("/reload-teams", {
+                            method: "POST",
+                            headers: { "Accept": "application/json" }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Refresh request failed with status ${response.status}`);
+                        }
+
+                        showStatus("Teams data refreshed successfully.", "success");
+                        refreshButton.hidden = false;
+                    } catch (error) {
+                        console.error("Could not refresh teams data:", error);
+                        showStatus("Could not refresh teams data. Please try again.", "error");
+                    } finally {
+                        reloadButton.disabled = false;
+                    }
+                });
+
+                refreshButton.addEventListener("click", () => window.location.reload());
+
+                const table = document.querySelector("#records-table");
+                if (!table) {
+                    return;
+                }
+
+                const body = table.tBodies[0];
+                const search = document.querySelector("#table-search");
+                const count = document.querySelector("#record-count");
+                const pageInfo = document.querySelector("#page-info");
+                const emptyState = document.querySelector("#empty-state");
+                const previousButton = document.querySelector("#previous-page");
+                const nextButton = document.querySelector("#next-page");
+                const tableScroll = document.querySelector(".table-scroll");
+                const pageSize = 20;
+                let page = 0;
+                let sortColumn = -1;
+                let sortDirection = 1;
+
+                const rows = Array.from(body.rows);
+                let visibleRows = rows;
+
+                function render() {
+                    const start = page * pageSize;
+                    const end = Math.min(start + pageSize, visibleRows.length);
+                    const visibleSet = new Set(visibleRows.slice(start, end));
+
+                    rows.forEach((row) => {
+                        row.hidden = !visibleSet.has(row);
+                        body.appendChild(row);
+                    });
+
+                    emptyState.hidden = visibleRows.length !== 0;
+                    table.hidden = visibleRows.length === 0;
+                    tableScroll.hidden = visibleRows.length === 0;
+                    count.innerHTML = `<strong>${visibleRows.length}</strong> ${visibleRows.length === 1 ? "record" : "records"}`;
+                    pageInfo.textContent = visibleRows.length
+                        ? `Showing ${start + 1}–${end} of ${visibleRows.length}`
+                        : "No results";
+                    previousButton.disabled = page === 0;
+                    nextButton.disabled = end >= visibleRows.length;
+                }
+
+                search.addEventListener("input", () => {
+                    const query = search.value.trim().toLocaleLowerCase();
+                    visibleRows = rows.filter((row) => row.textContent.toLocaleLowerCase().includes(query));
+                    page = 0;
+                    render();
+                });
+
+                table.querySelectorAll("thead th").forEach((header, columnIndex) => {
+                    header.querySelector("button").addEventListener("click", () => {
+                        if (sortColumn === columnIndex) {
+                            sortDirection *= -1;
+                        } else {
+                            sortColumn = columnIndex;
+                            sortDirection = 1;
+                        }
+
+                        table.querySelectorAll("thead th").forEach((columnHeader) => {
+                            columnHeader.setAttribute("aria-sort", "none");
+                            columnHeader.querySelector(".sort-indicator").textContent = "↕";
+                        });
+                        header.setAttribute("aria-sort", sortDirection === 1 ? "ascending" : "descending");
+                        header.querySelector(".sort-indicator").textContent = sortDirection === 1 ? "↑" : "↓";
+
+                        rows.sort((first, second) => {
+                            const firstValue = first.cells[columnIndex].textContent.trim();
+                            const secondValue = second.cells[columnIndex].textContent.trim();
+                            return firstValue.localeCompare(secondValue, undefined, {
+                                numeric: true,
+                                sensitivity: "base"
+                            }) * sortDirection;
+                        });
+                        visibleRows = rows.filter((row) => row.textContent.toLocaleLowerCase()
+                            .includes(search.value.trim().toLocaleLowerCase()));
+                        page = 0;
+                        render();
+                    });
+                });
+
+                previousButton.addEventListener("click", () => {
+                    if (page > 0) {
+                        page -= 1;
+                        render();
+                    }
+                });
+
+                nextButton.addEventListener("click", () => {
+                    if ((page + 1) * pageSize < visibleRows.length) {
+                        page += 1;
+                        render();
+                    }
+                });
+
+                render();
+            })();
+    </script>
+</body>
+</html>

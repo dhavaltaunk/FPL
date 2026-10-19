@@ -25,16 +25,18 @@ def reload_players(players):
     print(f'Inserted {len(inserted_ids.inserted_ids)} records to players')
 
 
-def load():
+def load(reload_teams_data = False, reload_players_data = False):
     response = run_path(ENDPOINT)
     status, data = response['Status'], response['Data']
     print(f'Response Status: {status}')
 
-    teams   = data[DATA_MAP['Teams']]
-    reload_teams(teams)
+    if reload_teams_data:
+        teams   = data[DATA_MAP['Teams']]
+        reload_teams(teams)
 
-    players = data[DATA_MAP['Players']]
-    reload_players(players)
+    if reload_players_data:
+        players = data[DATA_MAP['Players']]
+        reload_players(players)
 
 
 def main():

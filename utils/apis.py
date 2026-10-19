@@ -1,5 +1,17 @@
 import functools
 from utils.mongodb_conn import get_fpl_db
+from utils.projections import TEAMS_DISPLAY_PROJECTION
+
+
+@functools.lru_cache(maxsize=1)
+def get_teams():
+    '''
+    Get names of all teams in the Premier League
+    '''
+    db = get_fpl_db()
+    teams_collection = db.teams
+    teams = teams_collection.find({}, TEAMS_DISPLAY_PROJECTION)
+    return list(teams)
 
 
 @functools.lru_cache(maxsize=1)
